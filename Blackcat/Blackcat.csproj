@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{380F04AF-09AC-4C24-BCEC-5366EF65D321}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Blackcat</RootNamespace>
+    <AssemblyName>Blackcat</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Threading.Tasks.Dataflow, Version=4.5.24.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Tpl.Dataflow.4.5.24\lib\portable-net45+win8+wpa81\System.Threading.Tasks.Dataflow.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Configuration\ConfigClassAttribute.cs" />
+    <Compile Include="Configuration\ConfigElement.cs" />
+    <Compile Include="Configuration\ConfigLoader.cs" />
+    <Compile Include="EventBus\EventBus.cs" />
+    <Compile Include="EventBus\IThreadInvoker.cs" />
+    <Compile Include="EventBus\MatchedMode.cs" />
+    <Compile Include="EventBus\NonUIThreadInvoker.cs" />
+    <Compile Include="EventBus\PostHandled.cs" />
+    <Compile Include="EventBus\SubscribeAttribute.cs" />
+    <Compile Include="EventBus\Subscriber.cs" />
+    <Compile Include="EventBus\ThreadMode.cs" />
+    <Compile Include="EventBus\UIThreadInvoker.cs" />
+    <Compile Include="OS\AppCrash.cs" />
+    <Compile Include="OS\IReportWindow.cs" />
+    <Compile Include="OS\ProcessInfo.cs" />
+    <Compile Include="OS\ProcessInfoUtils.cs" />
+    <Compile Include="OS\SystemInfo.cs" />
+    <Compile Include="OS\SystemInfoUtils.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Threading\Delayer.cs" />
+    <Compile Include="Threading\ParallelTasks.cs" />
+    <Compile Include="Threading\SimpleProducerConsumer.cs" />
+    <Compile Include="Timers\Throttler.cs" />
+    <Compile Include="Types\BytesUtils.cs" />
+    <Compile Include="Types\DateTimeUtils.cs" />
+    <Compile Include="Types\DynamicInvoker.cs" />
+    <Compile Include="Types\MethodInvoker.cs" />
+    <Compile Include="Utils\Checksum.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
