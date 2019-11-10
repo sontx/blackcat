@@ -2,7 +2,7 @@
 using System.Globalization;
 using System.Reflection;
 
-namespace Blackcat.Types
+namespace Blackcat.Utils
 {
     public static class DynamicInvoker
     {
@@ -19,7 +19,7 @@ namespace Blackcat.Types
             return null;
         }
 
-        public static Delegate AddEventHandler<T>(Type type, string eventName, T handler) where T: Delegate
+        public static Delegate AddEventHandler<T>(Type type, string eventName, T handler) where T : Delegate
         {
             var @event = type.GetEvent(eventName);
             Delegate convertedHandler = ConvertDelegate(handler, @event.EventHandlerType);

@@ -1,4 +1,4 @@
-﻿using Blackcat.Types;
+﻿using Blackcat.Utils;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

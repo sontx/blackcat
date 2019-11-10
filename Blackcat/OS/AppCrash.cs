@@ -1,33 +1,38 @@
-﻿using Blackcat.Types;
+﻿using Blackcat.Utils;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
 
 namespace Blackcat.OS
 {
-    public static class AppCrash
+    public sealed class AppCrash
     {
-        private static Type _reportWindow;
+        private Type _reportWindow;
 
-        public static string ProductName { get; set; }
-        public static string DeveloperMail { get; set; }
-        public static string CrashDir { get; set; }
+        public string ProductName { get; set; }
+        public string DeveloperMail { get; set; }
+        public string CrashDir { get; set; }
 
-        static AppCrash()
+        public AppCrash()
         {
             var applicationType = DynamicInvoker.GetType("System.Windows.Forms", "Application");
             if (applicationType != null)
                 DynamicInvoker.AddEventHandler<ThreadExceptionEventHandler>(applicationType, "ThreadException", Application_ThreadException);
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+
+            ProductName = DynamicInvoker.GetPropertyValue(applicationType, "ProductName") as string;
+            DeveloperMail = "unknown@mail.com";
+            CrashDir = "CrashLogs";
         }
 
-        public static void Register(Type reportWindow)
+        public void Register(Type reportWindow)
         {
             _reportWindow = reportWindow;
         }
 
-        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             if (e.ExceptionObject is Exception exception)
             {
@@ -35,7 +40,7 @@ namespace Blackcat.OS
             }
         }
 
-        private static void Application_ThreadException(object sender, ThreadExceptionEventArgs e)
+        private void Application_ThreadException(object sender, ThreadExceptionEventArgs e)
         {
             if (e.Exception != null)
             {
@@ -43,21 +48,25 @@ namespace Blackcat.OS
             }
         }
 
-        private static void ShowReport(Exception exception)
+        private void ShowReport(Exception exception)
         {
-            SaveToDisk(exception);
+            var file = SaveToDisk(exception);
             if (_reportWindow != null)
             {
                 var reportWindow = (IReportWindow)Activator.CreateInstance(_reportWindow);
                 reportWindow.Initialize(exception, ProductName, DeveloperMail);
                 reportWindow.Show();
             }
+            else
+            {
+                Process.Start("notepad.exe", file);
+            }
         }
 
-        private static void SaveToDisk(Exception exception)
+        private string SaveToDisk(Exception exception)
         {
             var crashDir = string.IsNullOrEmpty(CrashDir)
-                ? Path.Combine(Environment.CurrentDirectory, "crash")
+                ? Path.Combine(Environment.CurrentDirectory, "CrashLogs")
                 : CrashDir;
 
             if (!Directory.Exists(crashDir))
@@ -68,11 +77,15 @@ namespace Blackcat.OS
 
             var report = GenerateReport(exception, ProductName);
             File.WriteAllText(filePath, report, Encoding.UTF8);
+
+            return filePath;
         }
 
-        public static string GenerateReport(Exception exception, string productName)
+        public string GenerateReport(Exception exception, string productName)
         {
             var builder = new StringBuilder();
+            builder.AppendLine("Application crashed report".ToUpper());
+            builder.AppendLine();
             builder.AppendLine($"Product: {productName}");
             builder.AppendLine($"Report date: {DateTime.Now}");
             builder.AppendLine($"-----------------------------------------------");

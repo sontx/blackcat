@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace Blackcat.EventBus
 {
-    public sealed class EventBus
+    public sealed class EventBus : IEventBus
     {
         private List<object> _containers = new List<object>();
         private IEnumerable<Subscriber> subscribers = new List<Subscriber>();

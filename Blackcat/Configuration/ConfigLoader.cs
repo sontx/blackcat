@@ -1,4 +1,4 @@
-﻿using Blackcat.Types;
+﻿using Blackcat.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Blackcat.Configuration
 {
-    public class ConfigLoader
+    public class ConfigLoader : IConfigLoader
     {
         public static ConfigLoader Default { get; } = new ConfigLoader();
 

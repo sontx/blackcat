@@ -2,7 +2,7 @@
 using System.Globalization;
 using System.Reflection;
 
-namespace Blackcat.Types
+namespace Blackcat.Utils
 {
     public sealed class MethodInvoker
     {
