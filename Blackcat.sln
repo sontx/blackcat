@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blackcat", "Blackcat\Blackc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{D2D36CE0-C320-4118-B6A6-145E8D4327C5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blackcat.WinForm", "Blackcat.WinForm\Blackcat.WinForm.csproj", "{884C3F3A-DBCC-4300-9B8A-48389F14BA6B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{D2D36CE0-C320-4118-B6A6-145E8D4327C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D2D36CE0-C320-4118-B6A6-145E8D4327C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D2D36CE0-C320-4118-B6A6-145E8D4327C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{884C3F3A-DBCC-4300-9B8A-48389F14BA6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{884C3F3A-DBCC-4300-9B8A-48389F14BA6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{884C3F3A-DBCC-4300-9B8A-48389F14BA6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{884C3F3A-DBCC-4300-9B8A-48389F14BA6B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
