@@ -1,13 +1,14 @@
-﻿using Blackcat.Utils;
+﻿using Blackcat.Configuration.AutoNotifyPropertyChange;
+using Blackcat.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace Blackcat.Configuration
 {
@@ -20,8 +21,34 @@ namespace Blackcat.Configuration
         private readonly object lockLoadConfigFile = new object();
         private ConfigFile loadedConfigFile;
         private string loadedFileName;
+        private SaveMode saveMode;
 
-        public bool IgnoreCase { get; set; } = true;
+        public SaveMode SaveMode
+        {
+            get => saveMode;
+            set
+            {
+                if (saveMode == value) return;
+
+                if (value == SaveMode.OnChange)
+                {
+                    var dict = new Dictionary<string, object>(loadedConfigDict);
+                    foreach (var data in dict.Values)
+                    {
+                        SubscribeChanges(data);
+                    }
+                }
+                else if (value == SaveMode.ReadOnly && saveMode == SaveMode.OnChange)
+                {
+                    var dict = new Dictionary<string, object>(loadedConfigDict);
+                    foreach (var data in dict.Values)
+                    {
+                        UnsubscribeChanges(data);
+                    }
+                }
+                saveMode = value;
+            }
+        }
 
         public ConfigLoader()
         {
@@ -34,11 +61,19 @@ namespace Blackcat.Configuration
 
         private void Application_ApplicationExit(object sender, EventArgs e)
         {
-            SaveConfigToFile();
+            if (SaveMode == SaveMode.OnExit)
+            {
+                SaveConfigToFile();
+            }
         }
 
         public void SaveConfigToFile()
         {
+            if (SaveMode == SaveMode.ReadOnly)
+            {
+                throw new ConfigurationIOException("Can not save configuration when SaveMode is ReadOnly");
+            }
+
             var dict = new Dictionary<string, object>(loadedConfigDict);
             var configs = dict.Select(pair => new ConfigElement
             {
@@ -61,11 +96,11 @@ namespace Blackcat.Configuration
 
         public T Get<T>() where T : class
         {
-            if (loadedConfigFile == null)
+            lock (lockLoadConfigFile)
             {
-                lock (lockLoadConfigFile)
+                if (loadedConfigFile == null)
                 {
-                    Load();
+                    LoadFile();
                 }
             }
 
@@ -87,29 +122,59 @@ namespace Blackcat.Configuration
 
         private void LoadConfig<T>(string requestKey) where T : class
         {
-            var found = loadedConfigFile?.Configs.Find(config => string.Compare(requestKey, config.Key, IgnoreCase) == 0);
+            var found = loadedConfigFile?.Configs.Find(config => string.Compare(requestKey, config.Key) == 0);
             if (found != null)
             {
                 var jObj = found.Data as JObject;
                 var data = jObj.ToObject<T>();
-                loadedConfigDict.TryAdd(requestKey, data);
+                loadedConfigDict.TryAdd(requestKey, PreprocessLoadedData(data));
             }
             else
             {
                 var newConfigInstance = Activator.CreateInstance<T>();
-                loadedConfigDict.TryAdd(requestKey, newConfigInstance);
+                loadedConfigDict.TryAdd(requestKey, PreprocessLoadedData(newConfigInstance));
             }
         }
 
-        public Task LoadAsync(string fileName = null)
+        private T PreprocessLoadedData<T>(T loadedData) where T : class
         {
-            return Task.Run(() =>
+            if (loadedData is AutoNotifyPropertyChanged)
             {
-                Load(fileName);
-            });
+                var decoratedData = AutoNotifyPropertyChanged.CreateInstance<T>();
+                var json = JsonConvert.SerializeObject(loadedData);
+                JsonConvert.PopulateObject(json, decoratedData);
+                if (SaveMode == SaveMode.OnChange)
+                {
+                    SubscribeChanges(decoratedData);
+                }
+                return decoratedData;
+            }
+            return loadedData;
         }
 
-        private void Load(string fileName = null)
+        private void SubscribeChanges(object data)
+        {
+            if (data is AutoNotifyPropertyChanged propChanged)
+            {
+                propChanged.PropertyChanged -= Data_PropertyChanged;
+                propChanged.PropertyChanged += Data_PropertyChanged;
+            }
+        }
+
+        private void UnsubscribeChanges(object data)
+        {
+            if (data is AutoNotifyPropertyChanged propChanged)
+            {
+                propChanged.PropertyChanged -= Data_PropertyChanged;
+            }
+        }
+
+        private void Data_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            SaveConfigToFile();
+        }
+
+        private void LoadFile(string fileName = null)
         {
             if (string.IsNullOrEmpty(fileName))
                 fileName = GetDefaultConfigFileName();
@@ -130,7 +195,7 @@ namespace Blackcat.Configuration
         {
             var assembly = Assembly.GetEntryAssembly() ?? GetType().Assembly;
             var nameWithoutExtension = Path.GetFileNameWithoutExtension(assembly.Location);
-            return $"{nameWithoutExtension}.config.json".ToLower();
+            return $"{nameWithoutExtension}.json";
         }
     }
 }

@@ -51,7 +51,9 @@
     <Compile Include="Configuration\ConfigClassAttribute.cs" />
     <Compile Include="Configuration\ConfigElement.cs" />
     <Compile Include="Configuration\ConfigLoader.cs" />
+    <Compile Include="Configuration\ConfigurationIOException.cs" />
     <Compile Include="Configuration\IConfigLoader.cs" />
+    <Compile Include="Configuration\SaveMode.cs" />
     <Compile Include="EventBus\EventBus.cs" />
     <Compile Include="EventBus\IEventBus.cs" />
     <Compile Include="EventBus\IThreadInvoker.cs" />
@@ -79,6 +81,9 @@
     <Compile Include="IoC\TinyIoC.cs" />
     <Compile Include="Types\BytesUtils.cs" />
     <Compile Include="Types\DateTimeUtils.cs" />
+    <Compile Include="Configuration\AutoNotifyPropertyChange\AutoNotifyPropertyChanged.cs" />
+    <Compile Include="Configuration\AutoNotifyPropertyChange\CodeGen.cs" />
+    <Compile Include="Configuration\AutoNotifyPropertyChange\Extension.cs" />
     <Compile Include="Utils\DynamicInvoker.cs" />
     <Compile Include="Utils\MethodInvoker.cs" />
     <Compile Include="Utils\Checksum.cs" />
@@ -89,5 +94,6 @@
   <ItemGroup>
     <Compile Include="IoC\TinyIoC.Factory.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
