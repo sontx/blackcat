@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Blackcat.Configuration
 {
@@ -70,9 +71,7 @@ namespace Blackcat.Configuration
         public void SaveConfigToFile()
         {
             if (SaveMode == SaveMode.ReadOnly)
-            {
-                throw new ConfigurationIOException("Can not save configuration when SaveMode is ReadOnly");
-            }
+                return;
 
             var dict = new Dictionary<string, object>(loadedConfigDict);
             var configs = dict.Select(pair => new ConfigElement
@@ -179,7 +178,7 @@ namespace Blackcat.Configuration
 
         private void Data_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            SaveConfigToFile();
+            Task.Run(SaveConfigToFile);
         }
 
         private void LoadFile(string fileName = null)
