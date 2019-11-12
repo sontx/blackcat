@@ -85,6 +85,8 @@
     <Compile Include="Configuration\AutoNotifyPropertyChange\CodeGen.cs" />
     <Compile Include="Configuration\AutoNotifyPropertyChange\Extension.cs" />
     <Compile Include="Types\StringUtils.cs" />
+    <Compile Include="UI\IInvokerHost.cs" />
+    <Compile Include="UI\IMessageBoxHost.cs" />
     <Compile Include="Utils\DynamicInvoker.cs" />
     <Compile Include="Utils\MethodInvoker.cs" />
     <Compile Include="Utils\Checksum.cs" />

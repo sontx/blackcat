@@ -42,11 +42,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseCustomControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="BaseForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="BaseForm.Designer.cs">
       <DependentUpon>BaseForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="BaseUserControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="BaseUserControl.Designer.cs">
+      <DependentUpon>BaseUserControl.cs</DependentUpon>
     </Compile>
     <Compile Include="ChooserForm.cs">
       <SubType>Form</SubType>
@@ -54,6 +63,8 @@
     <Compile Include="ChooserForm.Designer.cs">
       <DependentUpon>ChooserForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="InvokerHost.cs" />
+    <Compile Include="MessageBoxHost.cs" />
     <Compile Include="SettingsForm.cs">
       <SubType>Form</SubType>
     </Compile>

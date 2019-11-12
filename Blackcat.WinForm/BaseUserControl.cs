@@ -3,12 +3,12 @@ using System.Windows.Forms;
 
 namespace Blackcat.WinForm
 {
-    public partial class BaseForm : Form
+    public partial class BaseUserControl : UserControl
     {
         public IInvokerHost InvokerHost { get; }
         public IMessageBoxHost MessageBoxHost { get; }
 
-        public BaseForm()
+        public BaseUserControl()
         {
             InitializeComponent();
             InvokerHost = new InvokerHost(this);
