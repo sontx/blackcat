@@ -1,5 +1,6 @@
 ﻿using Blackcat.Configuration;
 using Blackcat.Types;
+using Newtonsoft.Json;
 using System.Reflection;
 using System.Windows.Forms;
 
@@ -8,6 +9,7 @@ namespace Blackcat.WinForm
     public partial class SettingsPanel : UserControl
     {
         private object settings;
+        private string originalSettings;
 
         public object Settings
         {
@@ -19,6 +21,8 @@ namespace Blackcat.WinForm
                 propertyGrid1.SelectedObject = settings;
                 labelDescription.Visible = false;
 
+                originalSettings = JsonConvert.SerializeObject(settings);
+
                 if (settings != null)
                 {
                     var configClassAttr = value.GetType().GetCustomAttribute<ConfigClassAttribute>();
@@ -28,6 +32,8 @@ namespace Blackcat.WinForm
                 }
             }
         }
+
+        public bool SettingsChanged => originalSettings != JsonConvert.SerializeObject(settings);
 
         public SettingsPanel()
         {

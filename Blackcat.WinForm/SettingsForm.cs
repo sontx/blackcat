@@ -15,6 +15,8 @@
             }
         }
 
+        public bool SettingsChanged => settingsPanel1.SettingsChanged;
+
         public SettingsForm()
         {
             InitializeComponent();
