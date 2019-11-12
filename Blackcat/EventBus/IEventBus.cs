@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Blackcat.EventBus
 {
@@ -9,5 +10,9 @@ namespace Blackcat.EventBus
         void Unregister(object container);
 
         List<object> Post(object message, bool stick = false);
+
+        object GetStickyEvent(Type eventType);
+
+        void RemoveStickyEvent(object stickyEvent);
     }
 }

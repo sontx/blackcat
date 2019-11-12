@@ -58,6 +58,7 @@
     <Compile Include="EventBus\IEventBus.cs" />
     <Compile Include="EventBus\IThreadInvoker.cs" />
     <Compile Include="EventBus\MatchedMode.cs" />
+    <Compile Include="EventBus\MessageChecker.cs" />
     <Compile Include="EventBus\NonUIThreadInvoker.cs" />
     <Compile Include="EventBus\PostHandled.cs" />
     <Compile Include="EventBus\SubscribeAttribute.cs" />

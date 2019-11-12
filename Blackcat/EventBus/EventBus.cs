@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -10,6 +11,8 @@ namespace Blackcat.EventBus
         private List<object> _containers = new List<object>();
         private IEnumerable<Subscriber> subscribers = new List<Subscriber>();
         private ConcurrentBag<object> stickedMessages = new ConcurrentBag<object>();
+        private MatchedMode matchedMode;
+        private MessageChecker messageChecker;
         private readonly object lockRegister = new object();
         private readonly object lockStickMessages = new object();
 
@@ -17,13 +20,23 @@ namespace Blackcat.EventBus
 
         public IThreadInvoker ThreadInvoker { get; set; }
 
-        public MatchedMode MatchedMode { get; set; } = MatchedMode.InstanceOf;
+        public MatchedMode MatchedMode
+        {
+            get => matchedMode;
+            set
+            {
+                matchedMode = value;
+                messageChecker = new MessageChecker(value);
+            }
+        }
 
         public EventBus()
         {
             ThreadInvoker = UIThreadInvoker.IsSupported()
                 ? (IThreadInvoker)new UIThreadInvoker()
                 : new NonUIThreadInvoker();
+
+            MatchedMode = MatchedMode.ExactlyType;
         }
 
         public void Register(object container)
@@ -47,30 +60,47 @@ namespace Blackcat.EventBus
 
         private void BroadcastStickedMessages(IEnumerable<Subscriber> subscribers)
         {
-            var executedList = new List<object>();
-            foreach (var message in stickedMessages)
+            List<object> cloned;
+            lock (lockStickMessages)
             {
-                var executed = false;
+                cloned = stickedMessages.ToList();
+            }
+
+            foreach (var message in cloned)
+            {
                 foreach (var subscriber in subscribers)
                 {
                     if (subscriber.CanExecute(message))
                     {
-                        executed = true;
                         subscriber.ExecuteIfNeeded(message);
                     }
                 }
-
-                if (executed)
-                    executedList.Add(message);
             }
+        }
 
-            if (executedList.Count > 0)
+        public object GetStickyEvent(Type eventType)
+        {
+            lock (lockStickMessages)
             {
-                lock (lockStickMessages)
+                foreach (var message in stickedMessages)
                 {
-                    var notExecutedList = stickedMessages.Where(message => !executedList.Contains(message));
-                    stickedMessages = new ConcurrentBag<object>(notExecutedList);
+                    if (messageChecker.IsMatched(message, eventType))
+                    {
+                        return message;
+                    }
                 }
+            }
+            return null;
+        }
+
+        public void RemoveStickyEvent(object stickyEvent)
+        {
+            if (stickyEvent == null) return;
+
+            lock (lockStickMessages)
+            {
+                var remainingList = stickedMessages.Where(message => message != stickyEvent);
+                stickedMessages = new ConcurrentBag<object>(remainingList);
             }
         }
 
@@ -123,13 +153,22 @@ namespace Blackcat.EventBus
 
             if (!executed && stick)
             {
-                lock (lockStickMessages)
-                {
-                    stickedMessages.Add(message);
-                }
+                AddToStickedMessageList(message);
             }
 
             return ret;
+        }
+
+        private void AddToStickedMessageList(object message)
+        {
+            var currentMatchedTypeEvent = GetStickyEvent(message.GetType());
+            if (currentMatchedTypeEvent != null)
+                RemoveStickyEvent(currentMatchedTypeEvent);
+            
+            lock (lockStickMessages)
+            {
+                stickedMessages.Add(message);
+            }
         }
 
         private List<Subscriber> GetSubscribers(object container)
@@ -141,7 +180,7 @@ namespace Blackcat.EventBus
                 var customAttribute = methodInfo.GetCustomAttribute<SubscribeAttribute>();
                 if (customAttribute != null)
                 {
-                    var subscriber = new Subscriber(customAttribute, methodInfo, ThreadInvoker, container, MatchedMode);
+                    var subscriber = new Subscriber(customAttribute, methodInfo, ThreadInvoker, container, messageChecker);
                     subscribers.Add(subscriber);
                 }
             }

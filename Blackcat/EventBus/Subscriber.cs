@@ -11,7 +11,7 @@ namespace Blackcat.EventBus
         private readonly MethodInfo _subscriberMethodInfo;
         private readonly Type _subscribeType;
         private readonly IThreadInvoker _threadInvoker;
-        private readonly MatchedMode _matchedMode;
+        private readonly MessageChecker _messageChecker;
 
         public object Container { get; }
 
@@ -20,13 +20,13 @@ namespace Blackcat.EventBus
             MethodInfo subscriberMethodInfo,
             IThreadInvoker threadInvoker,
             object container,
-            MatchedMode matchedMode)
+            MessageChecker messageChecker)
         {
             _subscribeAttribute = subscribeAttribute;
             _subscriberMethodInfo = subscriberMethodInfo;
             _threadInvoker = threadInvoker;
             Container = container;
-            _matchedMode = matchedMode;
+            _messageChecker = messageChecker;
 
             var parameters = _subscriberMethodInfo.GetParameters();
             if (parameters.Length != 1)
@@ -36,9 +36,7 @@ namespace Blackcat.EventBus
 
         public bool CanExecute(object message)
         {
-            return _matchedMode == MatchedMode.ExactlyType
-                ? _subscribeType == message.GetType()
-                : _subscribeType.IsInstanceOfType(message);
+            return _messageChecker.IsMatched(message, _subscribeType);
         }
 
         public object ExecuteIfNeeded(object message)
