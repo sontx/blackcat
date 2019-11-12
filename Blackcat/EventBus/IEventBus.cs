@@ -14,5 +14,7 @@ namespace Blackcat.EventBus
         object GetStickyEvent(Type eventType);
 
         void RemoveStickyEvent(object stickyEvent);
+
+        void RemoveAllStickyEvents();
     }
 }

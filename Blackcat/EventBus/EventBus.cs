@@ -104,6 +104,14 @@ namespace Blackcat.EventBus
             }
         }
 
+        public void RemoveAllStickyEvents()
+        {
+            lock (lockStickMessages)
+            {
+                stickedMessages = new ConcurrentBag<object>();
+            }
+        }
+
         public void Unregister(object container)
         {
             lock (lockRegister)
@@ -164,7 +172,7 @@ namespace Blackcat.EventBus
             var currentMatchedTypeEvent = GetStickyEvent(message.GetType());
             if (currentMatchedTypeEvent != null)
                 RemoveStickyEvent(currentMatchedTypeEvent);
-            
+
             lock (lockStickMessages)
             {
                 stickedMessages.Add(message);
