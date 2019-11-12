@@ -105,9 +105,7 @@ namespace Blackcat.Configuration
             }
 
             var requestType = typeof(T);
-            var configAttr = requestType.GetCustomAttribute<ConfigClassAttribute>();
-            if (configAttr == null) return null;
-            var requestKey = configAttr.Key;
+            var requestKey = GetRequestKey(requestType);
 
             lock (lockLoadIndividualConfig)
             {
@@ -118,6 +116,16 @@ namespace Blackcat.Configuration
             if (loadedConfigDict.TryGetValue(requestKey, out var ret))
                 return (T)ret;
             return null;
+        }
+
+        private string GetRequestKey(Type requestType)
+        {
+            var configAttr = requestType.GetCustomAttribute<ConfigClassAttribute>();
+            if (configAttr == null || string.IsNullOrEmpty(configAttr.Key))
+            {
+                return requestType.Name;
+            }
+            return configAttr.Key;
         }
 
         private void LoadConfig<T>(string requestKey) where T : class

@@ -9,14 +9,6 @@ namespace Blackcat.Configuration
     [AttributeUsage(AttributeTargets.Class)]
     public class ConfigClassAttribute : Attribute
     {
-        /// <summary>
-        ///     Creates <see cref="ConfigClassAttribute" />.
-        /// </summary>
-        public ConfigClassAttribute(string key)
-        {
-            Key = key;
-        }
-
         public string Key { get; set; }
         public string Description { get; set; }
     }

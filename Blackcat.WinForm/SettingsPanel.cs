@@ -2,11 +2,10 @@
 using Blackcat.Types;
 using Newtonsoft.Json;
 using System.Reflection;
-using System.Windows.Forms;
 
 namespace Blackcat.WinForm
 {
-    public partial class SettingsPanel : UserControl
+    public partial class SettingsPanel : BaseUserControl
     {
         private object settings;
         private string originalSettings;
@@ -25,10 +24,19 @@ namespace Blackcat.WinForm
 
                 if (settings != null)
                 {
-                    var configClassAttr = value.GetType().GetCustomAttribute<ConfigClassAttribute>();
-                    labelDescription.Visible = !string.IsNullOrEmpty(configClassAttr.Description);
-                    labelDescription.Text = configClassAttr.Description;
-                    Text = configClassAttr.Key.SplitCamelCase();
+                    var settingsType = value.GetType();
+                    var configClassAttr = settingsType.GetCustomAttribute<ConfigClassAttribute>();
+                    if (configClassAttr != null)
+                    {
+                        labelDescription.Visible = !string.IsNullOrEmpty(configClassAttr.Description);
+                        labelDescription.Text = configClassAttr.Description;
+                        var key = configClassAttr.Key;
+                        Text = (string.IsNullOrEmpty(key) ? settingsType.Name : key).SplitCamelCase();
+                    }
+                    else
+                    {
+                        Text = settingsType.Name.SplitCamelCase();
+                    }
                 }
             }
         }
