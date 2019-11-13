@@ -63,7 +63,7 @@ namespace Blackcat.Configuration
 
         private void Application_ApplicationExit(object sender, EventArgs e)
         {
-            if (SaveMode == SaveMode.OnExit)
+            if (SaveMode != SaveMode.ReadOnly)
             {
                 SaveConfigToFile();
             }
