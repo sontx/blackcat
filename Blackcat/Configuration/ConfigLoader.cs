@@ -89,7 +89,11 @@ namespace Blackcat.Configuration
                 Configs = configs
             };
 
-            var jsonToSave = JsonConvert.SerializeObject(configFile, Formatting.Indented);
+            var jsonToSave = JsonConvert.SerializeObject(configFile, new JsonSerializerSettings
+            {
+                ContractResolver = new SerializableExpandableContractResolver(),
+                Formatting = Formatting.Indented
+            });
             File.WriteAllText(loadedFileName, jsonToSave);
         }
 
@@ -133,7 +137,7 @@ namespace Blackcat.Configuration
             if (found != null)
             {
                 var jObj = found.Data as JObject;
-                var data = jObj.ToObject<T>();
+                var data = jObj.ToObject<T>(new JsonSerializer { ContractResolver = new SerializableExpandableContractResolver() });
                 loadedConfigDict.TryAdd(requestKey, PreprocessLoadedData(data));
             }
             else

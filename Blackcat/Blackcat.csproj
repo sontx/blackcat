@@ -54,6 +54,7 @@
     <Compile Include="Configuration\ConfigurationIOException.cs" />
     <Compile Include="Configuration\IConfigLoader.cs" />
     <Compile Include="Configuration\SaveMode.cs" />
+    <Compile Include="Configuration\SerializableExpandableContractResolver.cs" />
     <Compile Include="EventBus\EventBus.cs" />
     <Compile Include="EventBus\IEventBus.cs" />
     <Compile Include="EventBus\IThreadInvoker.cs" />
