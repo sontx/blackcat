@@ -11,7 +11,7 @@ namespace Blackcat.Configuration.AutoNotifyPropertyChange
     /// Configuration classes should inherit from this class to enable auto notify "PropertyChanged" event
     /// feature. Properties of configuration classes should be also marked as "virtual" property.
     /// Basically we will have something like this:
-    /// 
+    ///
     /// [ConfigClass("MyConfig")]
     /// public class MyConfig : AutoNotifyPropertyChanged
     /// {
@@ -62,23 +62,20 @@ namespace Blackcat.Configuration.AutoNotifyPropertyChange
 
         private static class GeneratedContainer
         {
-            // ReSharper disable StaticFieldInGenericType
-            private static volatile Type _generated;
+            private static Dictionary<Type, Type> _generatedTypes = new Dictionary<Type, Type>();
 
             private static readonly object Lock = new object();
 
-            // ReSharper restore StaticFieldInGenericType
             public static Type GetGenerated(Type type, Action<TypeBuilder> cb)
             {
-                if (_generated == null)
+                lock (Lock)
                 {
-                    lock (Lock)
-                    {
-                        if (_generated == null)
-                            _generated = CodeGen.CreateType(type.Name, cb);
-                    }
+                    if (_generatedTypes.ContainsKey(type))
+                        return _generatedTypes[type];
+                    var generatedType = CodeGen.CreateType(type.Name, cb);
+                    _generatedTypes.Add(type, generatedType);
+                    return generatedType;
                 }
-                return _generated;
             }
         }
 

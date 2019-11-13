@@ -48,6 +48,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration\FileDataStorage.cs" />
+    <Compile Include="Configuration\IDataStorage.cs" />
+    <Compile Include="Configuration\XmlDataAdapter.cs" />
     <Compile Include="Utils\CamelCaseNamingContractResolver.cs" />
     <Compile Include="Configuration\ConfigClassAttribute.cs" />
     <Compile Include="Configuration\ConfigElement.cs" />

@@ -5,23 +5,21 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Blackcat.Configuration
 {
-    public class ConfigLoader : IConfigLoader
+    public sealed class ConfigLoader : IConfigLoader
     {
         public static ConfigLoader Default { get; } = new ConfigLoader();
 
-        private readonly ConcurrentDictionary<string, object> loadedConfigDict = new ConcurrentDictionary<string, object>();
+        private readonly ConcurrentDictionary<string, object> configDict = new ConcurrentDictionary<string, object>();
         private readonly object lockLoadIndividualConfig = new object();
-        private readonly object lockLoadConfigFile = new object();
-        private ConfigFile loadedConfigFile;
-        private string loadedFileName;
+
         private SaveMode saveMode;
+        private bool disposed;
 
         public SaveMode SaveMode
         {
@@ -32,7 +30,7 @@ namespace Blackcat.Configuration
 
                 if (value == SaveMode.OnChange)
                 {
-                    var dict = new Dictionary<string, object>(loadedConfigDict);
+                    var dict = new Dictionary<string, object>(configDict);
                     foreach (var data in dict.Values)
                     {
                         SubscribeChanges(data);
@@ -40,7 +38,7 @@ namespace Blackcat.Configuration
                 }
                 else if (value == SaveMode.ReadOnly && saveMode == SaveMode.OnChange)
                 {
-                    var dict = new Dictionary<string, object>(loadedConfigDict);
+                    var dict = new Dictionary<string, object>(configDict);
                     foreach (var data in dict.Values)
                     {
                         UnsubscribeChanges(data);
@@ -51,6 +49,8 @@ namespace Blackcat.Configuration
         }
 
         public IDataAdapter Adapter { get; set; } = new JsonDataAdapter();
+
+        public IDataStorage Storage { get; set; } = new FileDataStorage();
 
         public ConfigLoader()
         {
@@ -69,12 +69,12 @@ namespace Blackcat.Configuration
             }
         }
 
-        public void SaveConfigToFile()
+        private void SaveConfigToFile()
         {
             if (SaveMode == SaveMode.ReadOnly)
                 return;
 
-            var dict = new Dictionary<string, object>(loadedConfigDict);
+            var dict = new Dictionary<string, object>(configDict);
             var configs = dict.Select(pair => new ConfigElement
             {
                 Key = pair.Key,
@@ -91,29 +91,21 @@ namespace Blackcat.Configuration
             };
 
             var contentToSave = Adapter.ToString(configFile);
-            File.WriteAllText(loadedFileName, contentToSave);
+            Storage.Save(contentToSave);
         }
 
         public T Get<T>() where T : class
         {
-            lock (lockLoadConfigFile)
-            {
-                if (loadedConfigFile == null)
-                {
-                    LoadFile();
-                }
-            }
-
             var requestType = typeof(T);
             var requestKey = GetRequestKey(requestType);
 
             lock (lockLoadIndividualConfig)
             {
-                if (!loadedConfigDict.ContainsKey(requestKey))
+                if (!configDict.ContainsKey(requestKey))
                     LoadConfig<T>(requestKey);
             }
 
-            if (loadedConfigDict.TryGetValue(requestKey, out var ret))
+            if (configDict.TryGetValue(requestKey, out var ret))
                 return (T)ret;
             return null;
         }
@@ -130,17 +122,26 @@ namespace Blackcat.Configuration
 
         private void LoadConfig<T>(string requestKey) where T : class
         {
-            var found = loadedConfigFile?.Configs.Find(config => string.Compare(requestKey, config.Key) == 0);
+            var configFile = GetConfigFile();
+            var found = configFile.Configs.Find(config => string.Compare(requestKey, config.Key) == 0);
             if (found != null)
             {
                 var data = Adapter.ToObject<T>(found.Data);
-                loadedConfigDict.TryAdd(requestKey, PreprocessLoadedData(data));
+                configDict.TryAdd(requestKey, PreprocessLoadedData(data));
             }
             else
             {
                 var newConfigInstance = Activator.CreateInstance<T>();
-                loadedConfigDict.TryAdd(requestKey, PreprocessLoadedData(newConfigInstance));
+                configDict.TryAdd(requestKey, PreprocessLoadedData(newConfigInstance));
             }
+        }
+
+        private ConfigFile GetConfigFile()
+        {
+            var content = Storage.Load();
+            return string.IsNullOrEmpty(content)
+                ? ConfigFile.Empty
+                : Adapter.ToObject<ConfigFile>(content);
         }
 
         private T PreprocessLoadedData<T>(T loadedData) where T : class
@@ -189,28 +190,14 @@ namespace Blackcat.Configuration
             Task.Run(SaveConfigToFile);
         }
 
-        private void LoadFile(string fileName = null)
+        public void Dispose()
         {
-            if (string.IsNullOrEmpty(fileName))
-                fileName = GetDefaultConfigFileName();
-
-            loadedFileName = fileName;
-
-            if (!File.Exists(fileName))
+            if (!disposed)
             {
-                loadedConfigFile = new ConfigFile { Configs = new List<ConfigElement>(0) };
-                return;
+                disposed = true;
+                Storage?.Dispose();
+                GC.SuppressFinalize(this);
             }
-
-            var textContent = File.ReadAllText(fileName);
-            loadedConfigFile = Adapter.ToObject<ConfigFile>(textContent);
-        }
-
-        private string GetDefaultConfigFileName()
-        {
-            var assembly = Assembly.GetEntryAssembly() ?? GetType().Assembly;
-            var nameWithoutExtension = Path.GetFileNameWithoutExtension(assembly.Location);
-            return $"{nameWithoutExtension}.json";
         }
     }
 }

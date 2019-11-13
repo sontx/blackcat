@@ -1,8 +1,11 @@
-﻿namespace Blackcat.Configuration
+﻿using System;
+
+namespace Blackcat.Configuration
 {
-    public interface IConfigLoader
+    public interface IConfigLoader : IDisposable
     {
         SaveMode SaveMode { get; set; }
+        IDataAdapter Adapter { get; set; }
 
         T Get<T>() where T : class;
     }

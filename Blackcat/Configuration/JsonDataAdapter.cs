@@ -10,11 +10,6 @@ namespace Blackcat.Configuration
     {
         private readonly IContractResolver contractResolver = new CamelCaseNamingContractResolver();
 
-        public object ToObject(string st)
-        {
-            return JsonConvert.DeserializeObject(st);
-        }
-
         public T ToObject<T>(object obj) where T : class
         {
             if (obj is string json)
