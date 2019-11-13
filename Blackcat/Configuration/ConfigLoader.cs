@@ -2,6 +2,7 @@
 using Blackcat.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -17,6 +18,7 @@ namespace Blackcat.Configuration
     {
         public static ConfigLoader Default { get; } = new ConfigLoader();
 
+        private readonly IContractResolver contractResolver = new CamelCaseNamingContractResolver();
         private readonly ConcurrentDictionary<string, object> loadedConfigDict = new ConcurrentDictionary<string, object>();
         private readonly object lockLoadIndividualConfig = new object();
         private readonly object lockLoadConfigFile = new object();
@@ -91,7 +93,7 @@ namespace Blackcat.Configuration
 
             var jsonToSave = JsonConvert.SerializeObject(configFile, new JsonSerializerSettings
             {
-                ContractResolver = new SerializableExpandableContractResolver(),
+                ContractResolver = contractResolver,
                 Formatting = Formatting.Indented
             });
             File.WriteAllText(loadedFileName, jsonToSave);
@@ -137,7 +139,7 @@ namespace Blackcat.Configuration
             if (found != null)
             {
                 var jObj = found.Data as JObject;
-                var data = jObj.ToObject<T>(new JsonSerializer { ContractResolver = new SerializableExpandableContractResolver() });
+                var data = jObj.ToObject<T>(new JsonSerializer { ContractResolver = contractResolver });
                 loadedConfigDict.TryAdd(requestKey, PreprocessLoadedData(data));
             }
             else

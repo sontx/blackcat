@@ -48,6 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration\CamelCaseNamingContractResolver.cs" />
     <Compile Include="Configuration\ConfigClassAttribute.cs" />
     <Compile Include="Configuration\ConfigElement.cs" />
     <Compile Include="Configuration\ConfigLoader.cs" />
