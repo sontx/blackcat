@@ -2,7 +2,7 @@
 using System;
 using System.ComponentModel;
 
-namespace Blackcat.Configuration
+namespace Blackcat.Utils
 {
     internal class SerializableExpandableContractResolver : DefaultContractResolver
     {

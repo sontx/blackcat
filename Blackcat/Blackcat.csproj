@@ -48,14 +48,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Configuration\CamelCaseNamingContractResolver.cs" />
+    <Compile Include="Utils\CamelCaseNamingContractResolver.cs" />
     <Compile Include="Configuration\ConfigClassAttribute.cs" />
     <Compile Include="Configuration\ConfigElement.cs" />
     <Compile Include="Configuration\ConfigLoader.cs" />
     <Compile Include="Configuration\ConfigurationIOException.cs" />
     <Compile Include="Configuration\IConfigLoader.cs" />
+    <Compile Include="Configuration\IDataAdapter.cs" />
+    <Compile Include="Configuration\JsonDataAdapter.cs" />
     <Compile Include="Configuration\SaveMode.cs" />
-    <Compile Include="Configuration\SerializableExpandableContractResolver.cs" />
+    <Compile Include="Utils\SerializableExpandableContractResolver.cs" />
     <Compile Include="EventBus\EventBus.cs" />
     <Compile Include="EventBus\IEventBus.cs" />
     <Compile Include="EventBus\IThreadInvoker.cs" />
@@ -87,6 +89,7 @@
     <Compile Include="Configuration\AutoNotifyPropertyChange\AutoNotifyPropertyChanged.cs" />
     <Compile Include="Configuration\AutoNotifyPropertyChange\CodeGen.cs" />
     <Compile Include="Configuration\AutoNotifyPropertyChange\Extension.cs" />
+    <Compile Include="Types\ObjectUtils.cs" />
     <Compile Include="Types\StringUtils.cs" />
     <Compile Include="UI\IInvokerHost.cs" />
     <Compile Include="UI\IMessageBoxHost.cs" />

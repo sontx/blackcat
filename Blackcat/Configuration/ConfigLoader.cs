@@ -1,8 +1,6 @@
 ﻿using Blackcat.Configuration.AutoNotifyPropertyChange;
+using Blackcat.Types;
 using Blackcat.Utils;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -18,7 +16,6 @@ namespace Blackcat.Configuration
     {
         public static ConfigLoader Default { get; } = new ConfigLoader();
 
-        private readonly IContractResolver contractResolver = new CamelCaseNamingContractResolver();
         private readonly ConcurrentDictionary<string, object> loadedConfigDict = new ConcurrentDictionary<string, object>();
         private readonly object lockLoadIndividualConfig = new object();
         private readonly object lockLoadConfigFile = new object();
@@ -52,6 +49,8 @@ namespace Blackcat.Configuration
                 saveMode = value;
             }
         }
+
+        public IDataAdapter Adapter { get; set; } = new JsonDataAdapter();
 
         public ConfigLoader()
         {
@@ -91,12 +90,8 @@ namespace Blackcat.Configuration
                 Configs = configs
             };
 
-            var jsonToSave = JsonConvert.SerializeObject(configFile, new JsonSerializerSettings
-            {
-                ContractResolver = contractResolver,
-                Formatting = Formatting.Indented
-            });
-            File.WriteAllText(loadedFileName, jsonToSave);
+            var contentToSave = Adapter.ToString(configFile);
+            File.WriteAllText(loadedFileName, contentToSave);
         }
 
         public T Get<T>() where T : class
@@ -138,8 +133,7 @@ namespace Blackcat.Configuration
             var found = loadedConfigFile?.Configs.Find(config => string.Compare(requestKey, config.Key) == 0);
             if (found != null)
             {
-                var jObj = found.Data as JObject;
-                var data = jObj.ToObject<T>(new JsonSerializer { ContractResolver = contractResolver });
+                var data = Adapter.ToObject<T>(found.Data);
                 loadedConfigDict.TryAdd(requestKey, PreprocessLoadedData(data));
             }
             else
@@ -154,8 +148,7 @@ namespace Blackcat.Configuration
             if (loadedData is AutoNotifyPropertyChanged)
             {
                 var decoratedData = AutoNotifyPropertyChanged.CreateInstance<T>();
-                var json = JsonConvert.SerializeObject(loadedData);
-                JsonConvert.PopulateObject(json, decoratedData);
+                decoratedData.Populate(loadedData);
                 if (SaveMode == SaveMode.OnChange)
                 {
                     SubscribeChanges(decoratedData);
@@ -200,8 +193,8 @@ namespace Blackcat.Configuration
                 return;
             }
 
-            var jsonSt = File.ReadAllText(fileName);
-            loadedConfigFile = JsonConvert.DeserializeObject<ConfigFile>(jsonSt);
+            var textContent = File.ReadAllText(fileName);
+            loadedConfigFile = Adapter.ToObject<ConfigFile>(textContent);
         }
 
         private string GetDefaultConfigFileName()

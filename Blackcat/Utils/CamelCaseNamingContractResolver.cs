@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json.Serialization;
 
-namespace Blackcat.Configuration
+namespace Blackcat.Utils
 {
     internal class CamelCaseNamingContractResolver : SerializableExpandableContractResolver
     {
