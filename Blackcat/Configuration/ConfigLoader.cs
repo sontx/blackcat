@@ -164,6 +164,15 @@ namespace Blackcat.Configuration
             {
                 propChanged.PropertyChanged -= Data_PropertyChanged;
                 propChanged.PropertyChanged += Data_PropertyChanged;
+
+                var props = data.GetType().GetProperties();
+                foreach (var prop in props)
+                {
+                    if (typeof(AutoNotifyPropertyChanged).IsAssignableFrom(prop.PropertyType))
+                    {
+                        SubscribeChanges(prop.GetValue(data));
+                    }
+                }
             }
         }
 

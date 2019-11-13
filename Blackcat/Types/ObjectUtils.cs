@@ -9,7 +9,8 @@ namespace Blackcat.Types
         {
             var settings = new JsonSerializerSettings
             {
-                ContractResolver = new CamelCaseNamingContractResolver()
+                ContractResolver = new CamelCaseNamingContractResolver(),
+                ObjectCreationHandling = ObjectCreationHandling.Replace
             };
             var json = JsonConvert.SerializeObject(srcObj, settings);
             JsonConvert.PopulateObject(json, destObj, settings);
