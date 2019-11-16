@@ -195,6 +195,12 @@ namespace Blackcat.Configuration
             if (!disposed)
             {
                 disposed = true;
+
+                if (SaveMode != SaveMode.ReadOnly)
+                {
+                    SaveConfigToFile();
+                }
+
                 Storage?.Dispose();
                 GC.SuppressFinalize(this);
             }

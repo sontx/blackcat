@@ -36,12 +36,15 @@ namespace Blackcat.Configuration
 
         public void Save(string content)
         {
+            if (disposed) return;
+
             try
             {
                 waitRead.WaitOne();
                 waitRead.Reset();
                 File.WriteAllText(FileName, content);
             }
+            catch (ObjectDisposedException) { }
             finally
             {
                 waitRead.Set();
