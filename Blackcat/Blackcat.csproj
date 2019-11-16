@@ -51,6 +51,9 @@
     <Compile Include="Configuration\FileDataStorage.cs" />
     <Compile Include="Configuration\IDataStorage.cs" />
     <Compile Include="Configuration\XmlDataAdapter.cs" />
+    <Compile Include="Intercomm\IntercommonIOException.cs" />
+    <Compile Include="Intercomm\Receiver.cs" />
+    <Compile Include="Intercomm\Sender.cs" />
     <Compile Include="Utils\CamelCaseNamingContractResolver.cs" />
     <Compile Include="Configuration\ConfigClassAttribute.cs" />
     <Compile Include="Configuration\ConfigElement.cs" />
