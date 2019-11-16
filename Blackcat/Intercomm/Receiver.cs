@@ -1,10 +1,6 @@
-﻿using Blackcat.Types;
-using Blackcat.Utils;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Blackcat.Intercomm
@@ -12,15 +8,14 @@ namespace Blackcat.Intercomm
     public sealed class Receiver : IDisposable
     {
         private readonly TcpListener listener;
-        private readonly JsonSerializerSettings jsonSettings;
-        private TcpClient client;
         private bool started;
         private bool disposed;
+
+        public IIOHandler IOHandler { get; set; } = new IOHandlerImpl();
 
         public Receiver(int port)
         {
             listener = new TcpListener(IPAddress.Any, port);
-            jsonSettings = new JsonSerializerSettings { ContractResolver = new CamelCaseNamingContractResolver() };
         }
 
         public Task<T> ReceiveAsync<T>()
@@ -29,50 +24,25 @@ namespace Blackcat.Intercomm
             {
                 StartIfNeeded();
                 WaitForClientIfNeeded();
-                return ReceiveData<T>();
+                return IOHandler.Receive<T>();
             });
         }
 
         public Task SendAsync(object data)
         {
-            if (!started || client == null)
+            if (!started || IOHandler.Client == null)
                 throw new IntercommonIOException("You must receive a request first");
 
             return Task.Run(() =>
             {
-                var json = JsonConvert.SerializeObject(data, jsonSettings);
-                var contentBytes = Encoding.UTF8.GetBytes(json);
-                var headerBytes = contentBytes.Length.ToBytes<int>();
-                var stream = client.GetStream();
-                stream.Write(headerBytes, 0, headerBytes.Length);
-                stream.Write(contentBytes, 0, contentBytes.Length);
+                IOHandler.Send(data);
             });
-        }
-
-        private T ReceiveData<T>()
-        {
-            var stream = client.GetStream();
-            var headerBytes = new byte[4];
-            var readByteCount = stream.Read(headerBytes, 0, headerBytes.Length);
-            if (readByteCount == headerBytes.Length)
-            {
-                var contentByteCount = headerBytes.ToInt32();
-                var contentBytes = new byte[contentByteCount];
-                readByteCount = stream.Read(contentBytes, 0, contentBytes.Length);
-                if (readByteCount == contentByteCount)
-                {
-                    var json = Encoding.UTF8.GetString(contentBytes);
-                    return JsonConvert.DeserializeObject<T>(json, jsonSettings);
-                }
-                throw new IntercommonIOException("Missing body content bytes");
-            }
-            throw new IntercommonIOException("Missing header content bytes");
         }
 
         private void WaitForClientIfNeeded()
         {
-            if (client == null)
-                client = listener.AcceptTcpClient();
+            if (IOHandler.Client == null)
+                IOHandler.Client = listener.AcceptTcpClient();
         }
 
         private void StartIfNeeded()
@@ -90,7 +60,7 @@ namespace Blackcat.Intercomm
             {
                 disposed = true;
                 listener.Stop();
-                client?.Dispose();
+                IOHandler.Client?.Dispose();
                 GC.SuppressFinalize(this);
             }
         }
