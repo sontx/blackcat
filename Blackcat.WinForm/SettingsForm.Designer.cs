@@ -59,6 +59,7 @@
             this.ClientSize = new System.Drawing.Size(296, 372);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
             this.Name = "SettingsForm";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Settings";
             this.pnlWorkingSpace.ResumeLayout(false);
             this.ResumeLayout(false);
