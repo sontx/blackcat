@@ -3317,8 +3317,8 @@ namespace Blackcat.IoC
             //							 where (property.GetMethod != null) && (property.SetMethod != null) && !property.PropertyType.GetTypeInfo().IsValueType
             //							 select property;
             //#else
-            var properties = from property in input.GetType().GetProperties()
-                             where property.GetGetMethod() != null && property.GetSetMethod() != null && !property.PropertyType.IsValueType()
+            var properties = from property in input.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                             where property.GetMethod != null && property.SetMethod != null && !property.PropertyType.IsValueType()
                              select property;
             //#endif
             var filter = resolveOptions != null ? resolveOptions.PropertyFilter : (prop) => true;
