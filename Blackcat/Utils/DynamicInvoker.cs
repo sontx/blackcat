@@ -96,6 +96,7 @@ namespace Blackcat.Utils
                 {
                     var flags = BindingFlags.Static | BindingFlags.SetProperty;
                     property.SetValue(null, value, flags, null, null, CultureInfo.CurrentCulture);
+                    return;
                 }
             }
             else
@@ -105,6 +106,7 @@ namespace Blackcat.Utils
                 {
                     var flags = BindingFlags.Instance | BindingFlags.SetProperty;
                     property.SetValue(instanceOrType, value, flags, null, null, CultureInfo.CurrentCulture);
+                    return;
                 }
             }
             throw new Exception($"Property {propertyName} not found");
