@@ -3,24 +3,24 @@ using System.Threading.Tasks;
 
 namespace Blackcat.Intercomm
 {
-    public sealed class SessionImpl : ISession
+    internal sealed class SessionImpl : ISession
     {
-        private readonly IIOHandler handler;
+        private readonly IProtocol protocol;
         private bool disposed;
 
-        public SessionImpl(IIOHandler handler)
+        public SessionImpl(IProtocol protocol)
         {
-            this.handler = handler;
+            this.protocol = protocol;
         }
 
         public Task<T> ReceiveAsync<T>()
         {
-            return Task.Run(() => handler.Receive<T>());
+            return Task.Run(() => protocol.Receive<T>());
         }
 
         public Task SendAsync(object data)
         {
-            return Task.Run(() => handler.Send(data));
+            return Task.Run(() => protocol.Send(data));
         }
 
         public void Dispose()
@@ -28,7 +28,7 @@ namespace Blackcat.Intercomm
             if (!disposed)
             {
                 disposed = true;
-                handler.Client?.Dispose();
+                protocol?.Dispose();
                 GC.SuppressFinalize(this);
             }
         }

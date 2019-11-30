@@ -1,20 +1,29 @@
-﻿using Blackcat.Types;
+﻿using Blackcat.Internal;
+using Blackcat.Types;
 using Blackcat.Utils;
 using Newtonsoft.Json;
-using System.Net.Sockets;
+using System;
+using System.IO;
 using System.Text;
 
 namespace Blackcat.Intercomm
 {
-    public sealed class IOHandlerImpl : IIOHandler
+    /// <summary>
+    /// Transmission data structure: [header] [body]
+    /// - Header: body length
+    /// - Body: data to send which encoded as json text
+    /// </summary>
+    internal sealed class ProtocolImpl : IProtocol
     {
         private readonly JsonSerializerSettings jsonSettings;
+        private readonly Stream stream;
+        private bool disponsed;
 
-        public TcpClient Client { get; set; }
-
-        public IOHandlerImpl()
+        public ProtocolImpl(Stream stream)
         {
+            Precondition.ArgumentNotNull(stream, nameof(stream));
             jsonSettings = new JsonSerializerSettings { ContractResolver = new CamelCaseNamingContractResolver() };
+            this.stream = stream;
         }
 
         public void Send(object data)
@@ -22,14 +31,12 @@ namespace Blackcat.Intercomm
             var json = JsonConvert.SerializeObject(data, jsonSettings);
             var contentBytes = Encoding.UTF8.GetBytes(json);
             var headerBytes = contentBytes.Length.ToBytes<int>();
-            var stream = Client.GetStream();
             stream.Write(headerBytes, 0, headerBytes.Length);
             stream.Write(contentBytes, 0, contentBytes.Length);
         }
 
         public T Receive<T>()
         {
-            var stream = Client.GetStream();
             var headerBytes = new byte[4];
             var readByteCount = stream.Read(headerBytes, 0, headerBytes.Length);
             if (readByteCount == headerBytes.Length)
@@ -45,6 +52,16 @@ namespace Blackcat.Intercomm
                 throw new IntercommonIOException("Missing body content bytes");
             }
             throw new IntercommonIOException("Missing header content bytes");
+        }
+
+        public void Dispose()
+        {
+            if (!disponsed)
+            {
+                disponsed = true;
+                stream?.Dispose();
+                GC.SuppressFinalize(this);
+            }
         }
     }
 }
