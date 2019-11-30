@@ -1,7 +1,5 @@
 ﻿using Blackcat.Internal;
 using Blackcat.Types;
-using Blackcat.Utils;
-using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Text;
@@ -15,21 +13,24 @@ namespace Blackcat.Intercomm
     /// </summary>
     internal sealed class ProtocolImpl : IProtocol
     {
-        private readonly JsonSerializerSettings jsonSettings;
         private readonly Stream stream;
         private bool disponsed;
+
+        public IContentAdapter ContentAdapter { get; set; } = new JsonContentAdapter();
 
         public ProtocolImpl(Stream stream)
         {
             Precondition.ArgumentNotNull(stream, nameof(stream));
-            jsonSettings = new JsonSerializerSettings { ContractResolver = new CamelCaseNamingContractResolver() };
             this.stream = stream;
         }
 
         public void Send(object data)
         {
-            var json = JsonConvert.SerializeObject(data, jsonSettings);
-            var contentBytes = Encoding.UTF8.GetBytes(json);
+            var adapter = ContentAdapter;
+            Precondition.PropertyNotNull(adapter, nameof(ContentAdapter));
+
+            var encoded = adapter.ToString(data);
+            var contentBytes = Encoding.UTF8.GetBytes(encoded);
             var headerBytes = contentBytes.Length.ToBytes<int>();
             stream.Write(headerBytes, 0, headerBytes.Length);
             stream.Write(contentBytes, 0, contentBytes.Length);
@@ -37,6 +38,9 @@ namespace Blackcat.Intercomm
 
         public T Receive<T>()
         {
+            var adapter = ContentAdapter;
+            Precondition.PropertyNotNull(adapter, nameof(ContentAdapter));
+
             var headerBytes = new byte[4];
             var readByteCount = stream.Read(headerBytes, 0, headerBytes.Length);
             if (readByteCount == headerBytes.Length)
@@ -46,8 +50,8 @@ namespace Blackcat.Intercomm
                 readByteCount = stream.Read(contentBytes, 0, contentBytes.Length);
                 if (readByteCount == contentByteCount)
                 {
-                    var json = Encoding.UTF8.GetString(contentBytes);
-                    return JsonConvert.DeserializeObject<T>(json, jsonSettings);
+                    var encoded = Encoding.UTF8.GetString(contentBytes);
+                    return adapter.ToObject<T>(encoded);
                 }
                 throw new IntercommonIOException("Missing body content bytes");
             }

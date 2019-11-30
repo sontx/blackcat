@@ -8,6 +8,11 @@ namespace Blackcat.Intercomm
     public interface IProtocol : IDisposable
     {
         /// <summary>
+        /// Represents a adapter to convert sending data to string and vice versa
+        /// </summary>
+        IContentAdapter ContentAdapter { get; set; }
+
+        /// <summary>
         /// Receives incomming data from the other side.
         /// </summary>
         /// <typeparam name="T">Type of sending data</typeparam>
