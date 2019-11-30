@@ -1,20 +1,20 @@
 ﻿using Blackcat.Internal;
-using System.Net;
-using System.Net.Sockets;
+using System.IO.Pipes;
 using System.Threading.Tasks;
 
-namespace Blackcat.Intercomm.Tcp
+namespace Blackcat.Intercomm.Pipe
 {
     public sealed class SingleReceiver : AbstractReceiver, ISingleReceiver
     {
-        private readonly TcpListener listener;
         private readonly object lockObj = new object();
-        private ISession session;
-        private bool started;
+        private readonly string pipeName;
 
-        public SingleReceiver(int port)
+        private NamedPipeServerStream server;
+        private ISession session;
+
+        public SingleReceiver(string pipeName)
         {
-            listener = new TcpListener(IPAddress.Any, port);
+            this.pipeName = pipeName;
         }
 
         public Task<T> ReceiveAsync<T>()
@@ -24,7 +24,6 @@ namespace Blackcat.Intercomm.Tcp
                 lock (lockObj)
                 {
                     StartIfNeeded();
-                    WaitForClientIfNeeded();
                 }
                 return await session.ReceiveAsync<T>();
             });
@@ -34,33 +33,30 @@ namespace Blackcat.Intercomm.Tcp
         {
             lock (lockObj)
             {
-                if (!started || session == null)
+                if (server == null || session == null)
                     throw new IntercommonIOException("You must receive a request first");
                 return session.SendAsync(data);
             }
         }
 
-        private void WaitForClientIfNeeded()
+        private void StartIfNeeded()
         {
             var sessionFactory = SessionFactory;
             Precondition.PropertyNotNull(sessionFactory, nameof(SessionFactory));
             var protocolFactory = ProtocolFactory;
             Precondition.PropertyNotNull(protocolFactory, nameof(ProtocolFactory));
 
-            if (session == null)
+            if (server == null)
             {
-                var client = listener.AcceptTcpClient();
-                var protocol = protocolFactory(client.GetStream());
+                server = new NamedPipeServerStream(
+                    pipeName,
+                    PipeDirection.InOut,
+                    NamedPipeServerStream.MaxAllowedServerInstances,
+                    PipeTransmissionMode.Byte,
+                    PipeOptions.WriteThrough);
+                server.WaitForConnection();
+                var protocol = protocolFactory(server);
                 session = sessionFactory(protocol);
-            }
-        }
-
-        private void StartIfNeeded()
-        {
-            if (!started)
-            {
-                started = true;
-                listener.Start(1);
             }
         }
 
@@ -70,8 +66,8 @@ namespace Blackcat.Intercomm.Tcp
             {
                 if (disposing)
                 {
-                    listener.Stop();
                     session?.Dispose();
+                    server?.Close();
                 }
                 base.Dispose(disposing);
             }

@@ -5,7 +5,7 @@ namespace Blackcat.Intercomm
 {
     public abstract class AbstractIntercomm : IIntercomm
     {
-        protected bool disposed;
+        protected volatile bool disposed;
 
         public Func<Stream, IProtocol> ProtocolFactory { get; set; }
 

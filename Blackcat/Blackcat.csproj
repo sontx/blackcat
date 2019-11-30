@@ -58,6 +58,10 @@
     <Compile Include="Intercomm\IntercommonIOException.cs" />
     <Compile Include="Intercomm\IProtocol.cs" />
     <Compile Include="Intercomm\IReceiver.cs" />
+    <Compile Include="Intercomm\Pipe\MultiReceiver.cs" />
+    <Compile Include="Intercomm\Pipe\PipeServers.cs" />
+    <Compile Include="Intercomm\Pipe\Sender.cs" />
+    <Compile Include="Intercomm\Pipe\SingleReceiver.cs" />
     <Compile Include="Intercomm\ProtocolImpl.cs" />
     <Compile Include="Intercomm\ISender.cs" />
     <Compile Include="Intercomm\ISession.cs" />
