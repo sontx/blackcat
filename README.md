@@ -356,3 +356,51 @@ if (type2 != null)
     DynamicInvoker.SetPropertyValue(control, "Text", "My text");
 }
 ```
+
+## Intercomm
+
+Inter process communication which allows processes to communicate each other and synchronize their actions
+
+### Basic usage
+
+1 client - 1 server communication
+
+Sender process (client)
+```cs
+using (var sender = new Sender("my-intercomm"))
+{
+  var response = await sender.SendAsync<string>("Hi server, I'm client1");
+  Console.WriteLine("Response from the other process is: " + response);
+}
+```
+
+Receiver process (server)
+```cs
+using (var receiver = new SingleReceiver("my-intercomm"))
+{
+  var request = await receiver.ReceiveAsync<string>();
+  await receiver.SendAsync("Hello " + request);
+}
+```
+
+### Advantage usage
+
+n client - 1 server communication
+
+Setup your sender process likes the basic usage section.
+
+Receiver process (server)
+```cs
+using (var receiver = new MultiReceiver("my-intercomm"))
+{
+    await receiver.WaitForSessionAsync(async session =>
+    {
+        var request = await session.ReceiveAsync<string>();
+        await session.SendAsync("Hello " + request);
+    });
+}
+```
+
+Currently this library supports communicating through tcp and pipe:
+- Blackcat.Intercomm.Pipe: for pipe supported
+- Blackcat.Intercomm.Tcp: for tcp supported
