@@ -202,6 +202,26 @@ var myStickyEvent = EventBus.Default.GetStickyEvent(typeof(MyEvent));
 EventBus.Default.RemoveStickyEvent(myStickyEvent);
 ```
 
+Communicates with another process uses EventBus
+
+Client process
+```cs
+var eventbus = ClientEventBus.StartNew("my-eventbus");
+eventbus.Post(new MyEvent{...});
+```
+
+Main process (ex: a windows service)
+```cs
+var eventbus = ServerEventBus.StartNew("my-eventbus);
+eventbus.Register(this);
+.....
+
+[Subscribe]
+private void ListenMyEvent(MyEvent myEvent)
+{
+...
+}
+```
 
 ## AppCrash
 
