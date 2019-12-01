@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace Blackcat.EventBus
 {
+    /// <summary>
+    /// Lightweight event aggregator/messenger for loosely coupled communication
+    /// </summary>
     public interface IEventBus
     {
         void Register(object container);

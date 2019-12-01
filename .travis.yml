@@ -1,0 +1,6 @@
+language: csharp
+solution: "Blackcat.sln"
+install:
+- travis_retry nuget restore -source "https://www.nuget.org/api/v2" Blackcat.sln
+script:
+- xbuild Blackcat.sln
