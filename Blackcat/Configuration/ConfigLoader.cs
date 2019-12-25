@@ -65,16 +65,21 @@ namespace Blackcat.Configuration
         {
             if (SaveMode != SaveMode.ReadOnly)
             {
-                SaveConfigToFile();
+                SaveConfig();
             }
         }
 
-        private void SaveConfigToFile()
+        private void SaveConfig()
+        {
+            SaveConfig(configDict, true);
+        }
+
+        private void SaveConfig(IDictionary<string, object> srcDict, bool overwrite)
         {
             if (SaveMode == SaveMode.ReadOnly)
                 return;
 
-            var dict = new Dictionary<string, object>(configDict);
+            var dict = new Dictionary<string, object>(srcDict);
             var configs = dict.Select(pair => new ConfigElement
             {
                 Key = pair.Key,
@@ -91,13 +96,24 @@ namespace Blackcat.Configuration
             };
 
             var contentToSave = Adapter.ToString(configFile);
-            Storage.Save(contentToSave);
+            Storage.Save(contentToSave, overwrite);
+        }
+
+        public void InitializeSettings(object[] settings)
+        {
+            var dict = new Dictionary<string, object>(settings.Length);
+            foreach (var setting in settings)
+            {
+                var configKey = GetConfigKey(setting.GetType());
+                dict.Add(configKey, setting);
+            }
+            SaveConfig(dict, false);
         }
 
         public T Get<T>() where T : class
         {
             var requestType = typeof(T);
-            var requestKey = GetRequestKey(requestType);
+            var requestKey = GetConfigKey(requestType);
 
             lock (lockLoadIndividualConfig)
             {
@@ -110,7 +126,7 @@ namespace Blackcat.Configuration
             return null;
         }
 
-        private string GetRequestKey(Type requestType)
+        private string GetConfigKey(Type requestType)
         {
             var configAttr = requestType.GetCustomAttribute<ConfigClassAttribute>();
             if (configAttr == null || string.IsNullOrEmpty(configAttr.Key))
@@ -187,7 +203,7 @@ namespace Blackcat.Configuration
 
         private void Data_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            Task.Run(SaveConfigToFile);
+            Task.Run(SaveConfig);
         }
 
         public void Dispose()
@@ -198,11 +214,10 @@ namespace Blackcat.Configuration
 
                 if (SaveMode != SaveMode.ReadOnly)
                 {
-                    SaveConfigToFile();
+                    SaveConfig();
                 }
 
                 Storage?.Dispose();
-                GC.SuppressFinalize(this);
             }
         }
     }

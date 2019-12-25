@@ -1,13 +1,11 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
-using System.Threading;
 
 namespace Blackcat.Configuration
 {
     public sealed class FileDataStorage : IDataStorage
     {
-        private readonly ManualResetEvent waitRead = new ManualResetEvent(true);
+        private readonly object lockObj = new object();
         private bool disposed;
 
         public string FileName { get; set; }
@@ -28,26 +26,25 @@ namespace Blackcat.Configuration
         {
             if (File.Exists(FileName))
             {
-                waitRead.WaitOne();
-                return File.ReadAllText(FileName);
+                lock (lockObj)
+                {
+                    return File.ReadAllText(FileName);
+                }
             }
             return "";
         }
 
-        public void Save(string content)
+        public void Save(string content, bool overwrite)
         {
-            if (disposed) return;
-
-            try
+            lock (lockObj)
             {
-                waitRead.WaitOne();
-                waitRead.Reset();
-                File.WriteAllText(FileName, content);
-            }
-            catch (ObjectDisposedException) { }
-            finally
-            {
-                waitRead.Set();
+                if (!disposed)
+                {
+                    if (overwrite || !File.Exists(FileName))
+                    {
+                        File.WriteAllText(FileName, content);
+                    }
+                }
             }
         }
 
@@ -55,9 +52,10 @@ namespace Blackcat.Configuration
         {
             if (!disposed)
             {
-                disposed = true;
-                waitRead.Close();
-                GC.SuppressFinalize(this);
+                lock (lockObj)
+                {
+                    disposed = true;
+                }
             }
         }
     }

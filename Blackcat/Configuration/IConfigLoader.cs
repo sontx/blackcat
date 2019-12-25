@@ -20,6 +20,11 @@ namespace Blackcat.Configuration
         IDataStorage Storage { get; set; }
 
         /// <summary>
+        /// Setups settings if it's not presented yet.
+        /// </summary>
+        void InitializeSettings(object[] settings);
+
+        /// <summary>
         /// Gets configuration instance by its type
         /// </summary>
         /// <typeparam name="T">Configuration type</typeparam>
