@@ -8,7 +8,10 @@ A bundle of dotnet utilities
 
 # Getting started
 
-1. Nuget (comming soon)
+1. Nuget:
+```bash
+Install-Package Blackcat -Version 1.0.0
+```
 2. Dll files (comming soon): [release page](https://github.com/sontx/blackcat/releases)
 3. Clone this repo as a submodule and add reference to your .net project
 
