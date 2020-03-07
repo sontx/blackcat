@@ -7,10 +7,9 @@ namespace Blackcat.EventBus
 {
     public class UIThreadInvoker : IThreadInvoker
     {
-        private int _mainThreadId;
-        private object _control;
-        private MethodInvoker invokeMethod;
-        private MethodInvoker beginInvokeMethod;
+        private readonly int _mainThreadId;
+        private readonly MethodInvoker invokeMethod;
+        private readonly MethodInvoker beginInvokeMethod;
         private volatile bool _disponsed;
 
         public static bool IsSupported()
@@ -24,10 +23,10 @@ namespace Blackcat.EventBus
             _mainThreadId = Thread.CurrentThread.ManagedThreadId;
 
             var type = DynamicInvoker.GetType("System.Windows.Forms", "Control");
-            _control = Activator.CreateInstance(type);
-            DynamicInvoker.InvokeMethod(_control, "CreateControl");
-            invokeMethod = new MethodInvoker(_control, "Invoke", new Type[] { typeof(Delegate) });
-            beginInvokeMethod = new MethodInvoker(_control, "BeginInvoke", new Type[] { typeof(Delegate) });
+            var control = Activator.CreateInstance(type);
+            DynamicInvoker.InvokeMethod(control, "CreateControl");
+            invokeMethod = new MethodInvoker(control, "Invoke", new Type[] { typeof(Delegate) });
+            beginInvokeMethod = new MethodInvoker(control, "BeginInvoke", new Type[] { typeof(Delegate) });
         }
 
         public bool IsMainThread()

@@ -85,10 +85,14 @@ namespace Blackcat.Configuration.AutoNotifyPropertyChange
 
         public static T CreateInstance<T>() where T : class
         {
-            return (T)Activator.CreateInstance(GeneratedContainer.GetGenerated(typeof(T), typeBuilder =>
+            return CreateInstance(typeof(T)) as T;
+        }
+
+        public static object CreateInstance(Type createType)
+        {
+            return Activator.CreateInstance(GeneratedContainer.GetGenerated(createType, typeBuilder =>
             {
-                var type = typeof(T);
-                BuildForType(typeBuilder, type);
+                BuildForType(typeBuilder, createType);
             }));
         }
 

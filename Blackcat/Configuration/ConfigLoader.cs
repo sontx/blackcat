@@ -1,4 +1,5 @@
 ﻿using Blackcat.Configuration.AutoNotifyPropertyChange;
+using Blackcat.Internal;
 using Blackcat.Types;
 using Blackcat.Utils;
 using System;
@@ -15,42 +16,53 @@ namespace Blackcat.Configuration
     {
         public static ConfigLoader Default { get; } = new ConfigLoader();
 
-        private readonly ConcurrentDictionary<string, object> configDict = new ConcurrentDictionary<string, object>();
-        private readonly object lockLoadIndividualConfig = new object();
+        private ConcurrentDictionary<string, object> _configDict = new ConcurrentDictionary<string, object>();
+        private readonly object _lockLoadIndividualConfig = new object();
 
-        private SaveMode saveMode;
-        private bool disposed;
+        private ConfigFile _loadedConfigFile;
+        private SaveMode _saveMode;
+        private bool _disposed;
+        private IDataStorage _storage;
 
         public SaveMode SaveMode
         {
-            get => saveMode;
+            get => _saveMode;
             set
             {
-                if (saveMode == value) return;
+                if (_saveMode == value) return;
 
                 if (value == SaveMode.OnChange)
                 {
-                    var dict = new Dictionary<string, object>(configDict);
+                    var dict = new Dictionary<string, object>(_configDict);
                     foreach (var data in dict.Values)
                     {
                         SubscribeChanges(data);
                     }
                 }
-                else if (value == SaveMode.ReadOnly && saveMode == SaveMode.OnChange)
+                else if (value == SaveMode.ReadOnly && _saveMode == SaveMode.OnChange)
                 {
-                    var dict = new Dictionary<string, object>(configDict);
+                    var dict = new Dictionary<string, object>(_configDict);
                     foreach (var data in dict.Values)
                     {
                         UnsubscribeChanges(data);
                     }
                 }
-                saveMode = value;
+                _saveMode = value;
             }
         }
 
-        public IDataAdapter Adapter { get; set; } = new JsonDataAdapter();
+        public IDataAdapter Adapter { get; set; }
 
-        public IDataStorage Storage { get; set; } = new FileDataStorage();
+        public IDataStorage Storage
+        {
+            get => _storage;
+            set
+            {
+                Precondition.PropertyNotNull(value, nameof(Storage));
+                _storage = value;
+                ReloadConfig();
+            }
+        }
 
         public ConfigLoader()
         {
@@ -59,6 +71,8 @@ namespace Blackcat.Configuration
             {
                 DynamicInvoker.AddEventHandler<EventHandler>(type, "ApplicationExit", Application_ApplicationExit);
             }
+            Adapter = new JsonDataAdapter();
+            Storage = new FileDataStorage();
         }
 
         private void Application_ApplicationExit(object sender, EventArgs e)
@@ -71,14 +85,22 @@ namespace Blackcat.Configuration
 
         private void SaveConfig()
         {
-            SaveConfig(configDict, true);
+            SaveSpecificConfig(_configDict, true);
         }
 
-        private void SaveConfig(IDictionary<string, object> srcDict, bool overwrite)
+        private ConfigFile SaveSpecificConfig(IDictionary<string, object> srcDict, bool overwrite)
         {
             if (SaveMode == SaveMode.ReadOnly)
-                return;
+                return null;
 
+            var configFile = CreateConfigFile(srcDict);
+            var contentToSave = Adapter.ToString(configFile);
+            Storage.Save(contentToSave, overwrite);
+            return configFile;
+        }
+
+        private ConfigFile CreateConfigFile(IDictionary<string, object> srcDict)
+        {
             var dict = new Dictionary<string, object>(srcDict);
             var configs = dict.Select(pair => new ConfigElement
             {
@@ -94,35 +116,93 @@ namespace Blackcat.Configuration
                 },
                 Configs = configs
             };
-
-            var contentToSave = Adapter.ToString(configFile);
-            Storage.Save(contentToSave, overwrite);
+            return configFile;
         }
 
-        public void InitializeSettings(object[] settings)
+        public void InitializeSettings(object[] defaultSettings)
         {
-            var dict = new Dictionary<string, object>(settings.Length);
-            foreach (var setting in settings)
+            Precondition.ArgumentNotNull(defaultSettings, nameof(defaultSettings));
+
+            var cloned = defaultSettings.Clone() as object[];
+            Array.Reverse(cloned);
+            if (Storage.IsPresented)
+                VerifySettings(cloned);
+            else
+                LoadDefaultSettings(cloned);
+        }
+
+        private void LoadDefaultSettings(IReadOnlyCollection<object> cloned)
+        {
+            var dict = new Dictionary<string, object>(cloned.Count);
+            foreach (var setting in cloned)
             {
                 var configKey = GetConfigKey(setting.GetType());
                 dict.Add(configKey, setting);
             }
-            SaveConfig(dict, false);
+
+            if (_saveMode == SaveMode.ReadOnly)
+            {
+                _configDict = new ConcurrentDictionary<string, object>(dict);
+            }
+            else
+            {
+                var savedConfigFile = SaveSpecificConfig(dict, false);
+                ReloadConfig(savedConfigFile);
+            }
+        }
+
+        private void VerifySettings(IEnumerable<object> defaultSettings)
+        {
+            var dict = new Dictionary<string, object>();
+            var verifyFailed = false;
+            foreach (var setting in defaultSettings)
+            {
+                var type = setting.GetType();
+                var configKey = GetConfigKey(type);
+                try
+                {
+                    if (!dict.ContainsKey(configKey))
+                    {
+                        var validSetting = Get(type);
+                        dict.Add(configKey, validSetting);
+                    }
+                }
+                catch
+                {
+                    dict.Add(configKey, setting);
+                    verifyFailed = true;
+                }
+            }
+
+            if (!verifyFailed) return;
+
+            if (_saveMode == SaveMode.ReadOnly)
+            {
+                _configDict = new ConcurrentDictionary<string, object>(dict);
+            }
+            else
+            {
+                var savedConfigFile = SaveSpecificConfig(dict, true);
+                ReloadConfig(savedConfigFile);
+            }
         }
 
         public T Get<T>() where T : class
         {
-            var requestType = typeof(T);
-            var requestKey = GetConfigKey(requestType);
+            return Get(typeof(T)) as T;
+        }
 
-            lock (lockLoadIndividualConfig)
+        public object Get(Type configType)
+        {
+            var requestKey = GetConfigKey(configType);
+            lock (_lockLoadIndividualConfig)
             {
-                if (!configDict.ContainsKey(requestKey))
-                    LoadConfig<T>(requestKey);
+                if (!_configDict.ContainsKey(requestKey))
+                    CacheOrCreateConfig(configType);
             }
 
-            if (configDict.TryGetValue(requestKey, out var ret))
-                return (T)ret;
+            if (_configDict.TryGetValue(requestKey, out var ret))
+                return ret;
             return null;
         }
 
@@ -133,23 +213,31 @@ namespace Blackcat.Configuration
             {
                 return requestType.Name;
             }
-            return configAttr.Key;
+            return string.IsNullOrEmpty(configAttr.Key)
+                ? requestType.Name
+                : configAttr.Key;
         }
 
-        private void LoadConfig<T>(string requestKey) where T : class
+        private void CacheOrCreateConfig(Type configType)
         {
-            var configFile = GetConfigFile();
-            var found = configFile.Configs.Find(config => string.Compare(requestKey, config.Key) == 0);
+            var configKey = GetConfigKey(configType);
+            var found = _loadedConfigFile.Configs.Find(config => string.CompareOrdinal(configKey, config.Key) == 0);
             if (found != null)
             {
-                var data = Adapter.ToObject<T>(found.Data);
-                configDict.TryAdd(requestKey, PreprocessLoadedData(data));
+                var data = Adapter.ToObject(found.Data, configType);
+                _configDict.TryAdd(configKey, PreprocessLoadedData(data));
             }
             else
             {
-                var newConfigInstance = Activator.CreateInstance<T>();
-                configDict.TryAdd(requestKey, PreprocessLoadedData(newConfigInstance));
+                var newConfigInstance = Activator.CreateInstance(configType);
+                _configDict.TryAdd(configKey, PreprocessLoadedData(newConfigInstance));
             }
+        }
+
+        private void ReloadConfig(ConfigFile configFile = null)
+        {
+            _loadedConfigFile = configFile ?? GetConfigFile();
+            _configDict.Clear();
         }
 
         private ConfigFile GetConfigFile()
@@ -160,19 +248,17 @@ namespace Blackcat.Configuration
                 : Adapter.ToObject<ConfigFile>(content);
         }
 
-        private T PreprocessLoadedData<T>(T loadedData) where T : class
+        private object PreprocessLoadedData(object loadedData)
         {
-            if (loadedData is AutoNotifyPropertyChanged)
+            if (!(loadedData is AutoNotifyPropertyChanged)) return loadedData;
+
+            var decoratedData = AutoNotifyPropertyChanged.CreateInstance(loadedData.GetType());
+            decoratedData.Populate(loadedData);
+            if (SaveMode == SaveMode.OnChange)
             {
-                var decoratedData = AutoNotifyPropertyChanged.CreateInstance<T>();
-                decoratedData.Populate(loadedData);
-                if (SaveMode == SaveMode.OnChange)
-                {
-                    SubscribeChanges(decoratedData);
-                }
-                return decoratedData;
+                SubscribeChanges(decoratedData);
             }
-            return loadedData;
+            return decoratedData;
         }
 
         private void SubscribeChanges(object data)
@@ -208,17 +294,15 @@ namespace Blackcat.Configuration
 
         public void Dispose()
         {
-            if (!disposed)
+            if (_disposed) return;
+            _disposed = true;
+
+            if (SaveMode != SaveMode.ReadOnly)
             {
-                disposed = true;
-
-                if (SaveMode != SaveMode.ReadOnly)
-                {
-                    SaveConfig();
-                }
-
-                Storage?.Dispose();
+                SaveConfig();
             }
+
+            Storage?.Dispose();
         }
     }
 }

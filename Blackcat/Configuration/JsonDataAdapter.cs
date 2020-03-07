@@ -1,41 +1,53 @@
 ﻿using Blackcat.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
 using System;
 
 namespace Blackcat.Configuration
 {
     public class JsonDataAdapter : IDataAdapter
     {
-        private readonly IContractResolver contractResolver = new CamelCaseNamingContractResolver();
+        private readonly JsonSerializerSettings _jsonSerializerSettings;
+        private readonly JsonSerializer _jsonSerializer;
+
+        public JsonDataAdapter()
+        {
+            _jsonSerializerSettings = new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCaseNamingContractResolver(),
+                Formatting = Formatting.Indented
+            };
+            _jsonSerializer = JsonSerializer.Create(_jsonSerializerSettings);
+        }
 
         public T ToObject<T>(object obj) where T : class
         {
-            if (obj is string json)
+            return ToObject(obj, typeof(T)) as T;
+        }
+
+        public object ToObject(object obj, Type convertTo)
+        {
+            switch (obj)
             {
-                return JsonConvert.DeserializeObject<T>(json);
+                case string json:
+                    return JsonConvert.DeserializeObject(json, convertTo, _jsonSerializerSettings);
+
+                case null:
+                    return null;
+
+                case JObject jObj:
+                    return jObj.ToObject(convertTo, _jsonSerializer);
             }
 
-            if (obj == null)
-                return null;
+            if (convertTo.IsInstanceOfType(obj))
+                return obj;
 
-            if (obj is JObject jObj)
-                return jObj.ToObject<T>(new JsonSerializer { ContractResolver = contractResolver });
-
-            if (obj is T)
-                return (T)obj;
-
-            throw new ConfigurationIOException($"Can not convert {obj.GetType().Name} to {typeof(T).Name}");
+            throw new ConfigurationIOException($"Can not convert {obj.GetType().Name} to {convertTo.Name}");
         }
 
         public string ToString(object data)
         {
-            return JsonConvert.SerializeObject(data, new JsonSerializerSettings
-            {
-                ContractResolver = contractResolver,
-                Formatting = Formatting.Indented
-            });
+            return JsonConvert.SerializeObject(data, _jsonSerializerSettings);
         }
     }
 }

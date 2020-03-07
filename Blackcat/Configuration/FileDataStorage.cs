@@ -5,10 +5,21 @@ namespace Blackcat.Configuration
 {
     public sealed class FileDataStorage : IDataStorage
     {
-        private readonly object lockObj = new object();
-        private bool disposed;
+        private readonly object _lockObj = new object();
+        private bool _disposed;
+        private string _fileName;
 
-        public string FileName { get; set; }
+        public  bool IsPresented { get; private set; }
+
+        public string FileName
+        {
+            get => _fileName;
+            set
+            {
+                _fileName = value;
+                IsPresented = !string.IsNullOrEmpty(value) && File.Exists(value);
+            }
+        }
 
         public FileDataStorage()
         {
@@ -26,7 +37,7 @@ namespace Blackcat.Configuration
         {
             if (File.Exists(FileName))
             {
-                lock (lockObj)
+                lock (_lockObj)
                 {
                     return File.ReadAllText(FileName);
                 }
@@ -36,26 +47,24 @@ namespace Blackcat.Configuration
 
         public void Save(string content, bool overwrite)
         {
-            lock (lockObj)
+            lock (_lockObj)
             {
-                if (!disposed)
+                if (_disposed) return;
+
+                if (overwrite || !File.Exists(FileName))
                 {
-                    if (overwrite || !File.Exists(FileName))
-                    {
-                        File.WriteAllText(FileName, content);
-                    }
+                    File.WriteAllText(FileName, content);
                 }
             }
         }
 
         public void Dispose()
         {
-            if (!disposed)
+            if (_disposed) return;
+
+            lock (_lockObj)
             {
-                lock (lockObj)
-                {
-                    disposed = true;
-                }
+                _disposed = true;
             }
         }
     }

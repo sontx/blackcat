@@ -22,12 +22,17 @@ namespace Blackcat.Configuration
         /// <summary>
         /// Setups settings if it's not presented yet.
         /// </summary>
-        void InitializeSettings(object[] settings);
+        void InitializeSettings(object[] defaultSettings);
 
         /// <summary>
         /// Gets configuration instance by its type
         /// </summary>
         /// <typeparam name="T">Configuration type</typeparam>
         T Get<T>() where T : class;
+
+        /// <summary>
+        /// Gets configuration instance by its type
+        /// </summary>
+        object Get(Type configType);
     }
 }
