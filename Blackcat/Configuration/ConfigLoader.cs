@@ -1,7 +1,6 @@
 ﻿using Blackcat.Configuration.AutoNotifyPropertyChange;
 using Blackcat.Internal;
 using Blackcat.Types;
-using Blackcat.Utils;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -23,6 +22,7 @@ namespace Blackcat.Configuration
         private SaveMode _saveMode;
         private bool _disposed;
         private IDataStorage _storage;
+        private IApplicationExitDispatcher _applicationExitDispatcher;
 
         public SaveMode SaveMode
         {
@@ -64,13 +64,24 @@ namespace Blackcat.Configuration
             }
         }
 
+        public IApplicationExitDispatcher ApplicationExitDispatcher
+        {
+            get => _applicationExitDispatcher;
+            set
+            {
+                if (_applicationExitDispatcher != null)
+                    _applicationExitDispatcher.Exit -= Application_ApplicationExit;
+
+                _applicationExitDispatcher = value;
+
+                if (_applicationExitDispatcher != null)
+                    _applicationExitDispatcher.Exit += Application_ApplicationExit;
+            }
+        }
+
         public ConfigLoader()
         {
-            var type = DynamicInvoker.GetType("System.Windows.Forms", "Application");
-            if (type != null)
-            {
-                DynamicInvoker.AddEventHandler<EventHandler>(type, "ApplicationExit", Application_ApplicationExit);
-            }
+            ApplicationExitDispatcher = new ApplicationExitDispatcher();
             Adapter = new JsonDataAdapter();
             Storage = new FileDataStorage();
         }

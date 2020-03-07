@@ -48,7 +48,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration\ApplicationExitDispatcher.cs" />
     <Compile Include="Configuration\FileDataStorage.cs" />
+    <Compile Include="Configuration\IApplicationExitDispatcher.cs" />
     <Compile Include="Configuration\IDataStorage.cs" />
     <Compile Include="Configuration\XmlDataAdapter.cs" />
     <Compile Include="EventBus\Intercomm\AbstractIntercommEventBus.cs" />

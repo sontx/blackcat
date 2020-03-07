@@ -20,6 +20,11 @@ namespace Blackcat.Configuration
         IDataStorage Storage { get; set; }
 
         /// <summary>
+        /// How the lib knows when application's exiting
+        /// </summary>
+        IApplicationExitDispatcher ApplicationExitDispatcher { get; set; }
+
+        /// <summary>
         /// Setups settings if it's not presented yet.
         /// </summary>
         void InitializeSettings(object[] defaultSettings);
