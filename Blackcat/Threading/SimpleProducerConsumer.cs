@@ -1,29 +1,37 @@
 ﻿using System;
-using System.Threading.Tasks.Dataflow;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace Blackcat.Threading
 {
     public class SimpleProducerConsumer<T> : IDisposable
     {
-        private readonly BufferBlock<T> bufferBlock = new BufferBlock<T>();
+        private readonly BlockingCollection<T> _collection = new BlockingCollection<T>();
 
         public void Post(T data)
         {
-            bufferBlock.Post(data);
+            _collection.Add(data);
         }
 
-        public async void WaitAndConsume(Action<T> whenAvailable)
+        public void WaitAndConsume(Action<T> whenAvailable)
         {
-            while (await bufferBlock.OutputAvailableAsync())
+            foreach (var item in _collection.GetConsumingEnumerable())
             {
-                var data = bufferBlock.Receive();
-                whenAvailable?.Invoke(data);
+                whenAvailable(item);
             }
+        }
+
+        public Task WaitAndConsumeAsync(Action<T> whenAvailable)
+        {
+            return Task.Run(() =>
+            {
+                WaitAndConsume(whenAvailable);
+            });
         }
 
         public void Dispose()
         {
-            bufferBlock.Complete();
+            _collection.CompleteAdding();
         }
     }
 }
